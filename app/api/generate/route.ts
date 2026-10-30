@@ -46,6 +46,9 @@ export async function GET(request: NextRequest) {
     if (status.status !== "COMPLETED") {
       return NextResponse.json({ status: status.status, queuePosition: status.queue_position ?? null });
     }
+    if ((status as any).error) {
+      return NextResponse.json({ status: "FAILED", error: (status as any).error }, { status: 502 });
+    }
     const result = await fal.queue.result(ENDPOINT, { requestId });
     const data = (result as any).data ?? result;
     const imageUrl = data?.images?.[0]?.url;

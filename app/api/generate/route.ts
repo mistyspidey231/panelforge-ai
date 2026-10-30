@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   try {
     configureFal();
     const requestId = request.nextUrl.searchParams.get("requestId");
-    if (!requestId || !/^[\\w-]{1,128}$/.test(requestId)) {
+    if (!requestId || !/^[A-Za-z0-9_-]{1,128}$/.test(requestId)) {
       return NextResponse.json({ error: "A valid generation request ID is required." }, { status: 400 });
     }
     const status = await fal.queue.status(ENDPOINT, { requestId });

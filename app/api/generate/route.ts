@@ -39,12 +39,12 @@ export async function GET(request: NextRequest) {
   try {
     configureFal();
     const requestId = request.nextUrl.searchParams.get("requestId");
-    if (!requestId || !/^[\w-]{1,128}$/.test(requestId)) {
+    if (!requestId || !/^[\\w-]{1,128}$/.test(requestId)) {
       return NextResponse.json({ error: "A valid generation request ID is required." }, { status: 400 });
     }
     const status = await fal.queue.status(ENDPOINT, { requestId });
     if (status.status !== "COMPLETED") {
-      return NextResponse.json({ status: status.status, queuePosition: status.queue_position ?? null });
+      return NextResponse.json({ status: status.status });
     }
     if ((status as any).error) {
       return NextResponse.json({ status: "FAILED", error: (status as any).error }, { status: 502 });

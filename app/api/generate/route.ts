@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64 : "";
+    const imageUrl = typeof body.imageUrl === "string" && body.imageUrl.startsWith("https://i.postimg.cc/") ? body.imageUrl : "";
 
     if (imageBase64.length > 1_400_000) {
       return NextResponse.json({ error: "The reference image is too large after compression. Please choose another image." }, { status: 413 });
@@ -46,14 +47,14 @@ export async function POST(request: NextRequest) {
     }
 
     fal.config({ credentials: apiKey });
-    const endpoint = imageBase64 ? EDIT_ENDPOINT : TEXT_ENDPOINT;
+    const endpoint = imageBase64 || imageUrl ? EDIT_ENDPOINT : TEXT_ENDPOINT;
     const input = {
       prompt,
       aspect_ratio: "3:4",
       resolution: "1K",
       output_format: "jpeg",
       num_images: 1,
-      ...(imageBase64 ? { image_urls: [`data:image/jpeg;base64,${imageBase64}`] } : {}),
+      ...((imageBase64 || imageUrl) ? { image_urls: [imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : imageUrl] } : {}),
     };
     const result = await fal.subscribe(endpoint, { input });
     const imageUrl = result.data?.images?.[0]?.url;

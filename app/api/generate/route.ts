@@ -59,17 +59,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64 : "";
+    const imageBase64s = Array.isArray(body.imageBase64s)
+      ? body.imageBase64s.filter((value: unknown): value is string => typeof value === "string").slice(0, 4)
+      : [];
     const imageUrls = Array.isArray(body.imageUrls)
       ? body.imageUrls.filter((url: unknown): url is string =>
           typeof url === "string" && /^https:\/\/i\.postimg\.cc\//.test(url)
         ).slice(0, 4)
       : [];
 
-    if (imageBase64.length > 1_400_000) {
+    if (imageBase64.length > 1_400_000 || imageBase64s.some(value => value.length > 1_400_000)) {
       return NextResponse.json({ error: "The reference image is too large after compression. Please choose another image." }, { status: 413 });
     }
-    if (imageBase64 && !/^[A-Za-z0-9+/]+={0,2}$/.test(imageBase64)) {
-      return NextResponse.json({ error: "The reference image could not be read. Please upload it again." }, { status: 400 });
+    if ([imageBase64, ...imageBase64s].some(value => value && !/^[A-Za-z0-9+/]+={0,2}$/.test(value))) {
+      return NextResponse.json({ error: "A reference image could not be read. Please upload it again." }, { status: 400 });
     }
     if (prompt.length < 3 || prompt.length > 50000) {
       return NextResponse.json({ error: "A valid image prompt is required." }, { status: 400 });
@@ -82,10 +85,10 @@ export async function POST(request: NextRequest) {
     form.append("guidance", "4");
 
     const references: Buffer[] = [];
-    if (imageBase64) {
-      references.push(await prepareReference(Buffer.from(imageBase64, "base64")));
-    } else {
-      for (const url of imageUrls.slice(0, 4)) references.push(await fetchReference(url));
+    const base64References = [imageBase64, ...imageBase64s].filter(Boolean).slice(0, 4);
+    for (const encoded of base64References) references.push(await prepareReference(Buffer.from(encoded, "base64")));
+    if (references.length < 4) {
+      for (const url of imageUrls.slice(0, 4 - references.length)) references.push(await fetchReference(url));
     }
     references.slice(0, 4).forEach((image, index) => {
       form.append(`input_image_${index}`, new Blob([new Uint8Array(image)], { type: "image/jpeg" }), `reference-${index + 1}.jpg`);

@@ -1,24 +1,16 @@
-import { fal } from "@fal-ai/client";
 import { NextRequest, NextResponse } from "next/server";
 
-const ENDPOINT = "google/nano-banana-2.1";
+const MODEL = "@cf/black-forest-labs/flux-1-schnell";
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
-function configureFal() {
-  const key = process.env.FAL_KEY;
-  if (!key) throw new Error("Image generation is not configured yet. Add FAL_KEY to the PanelForge server environment.");
-  fal.config({ credentials: key });
-}
-
-function rateLimit(request: NextRequest, action: "submit" | "poll") {
+function rateLimit(request: NextRequest) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const key = action + ":" + forwarded;
   const now = Date.now();
-  const windowMs = action === "submit" ? 60 * 60 * 1000 : 10 * 60 * 1000;
-  const max = action === "submit" ? 12 : 180;
-  const bucket = rateBuckets.get(key);
+  const windowMs = 60 * 60 * 1000;
+  const max = 12;
+  const bucket = rateBuckets.get(forwarded);
   if (!bucket || bucket.resetAt <= now) {
-    rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    rateBuckets.set(forwarded, { count: 1, resetAt: now + windowMs });
     return true;
   }
   if (bucket.count >= max) return false;
@@ -27,52 +19,52 @@ function rateLimit(request: NextRequest, action: "submit" | "poll") {
 }
 
 export async function POST(request: NextRequest) {
-  if (!rateLimit(request, "submit")) return NextResponse.json({ error: "Generation limit reached for this hour. Please try again later." }, { status: 429 });
+  if (!rateLimit(request)) {
+    return NextResponse.json({ error: "Generation limit reached for this hour. Please try again later." }, { status: 429 });
+  }
+
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+  if (!accountId || !apiToken) {
+    return NextResponse.json({ error: "Free image generation is not connected yet. Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to the server environment." }, { status: 503 });
+  }
+
   try {
-    configureFal();
     const body = await request.json();
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (prompt.length < 3 || prompt.length > 50000) {
       return NextResponse.json({ error: "A valid image prompt is required." }, { status: 400 });
     }
-    const queued = await fal.queue.submit(ENDPOINT, {
-      input: {
-        prompt,
-        num_images: 1,
-        aspect_ratio: "9:16",
-        output_format: "png",
-        resolution: "1K",
-        thinking_level: "medium",
-        enable_web_search: false,
-      },
-    });
-    return NextResponse.json({ requestId: queued.request_id });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to start image generation.";
-    return NextResponse.json({ error: message }, { status: message.includes("FAL_KEY") ? 503 : 500 });
-  }
-}
 
-export async function GET(request: NextRequest) {
-  if (!authorized(request)) return NextResponse.json({ error: "Enter the correct generation password." }, { status: 401 });
-  if (!rateLimit(request, "poll")) return NextResponse.json({ error: "Too many status checks. Please wait a moment." }, { status: 429 });
-  try {
-    configureFal();
-    const requestId = request.nextUrl.searchParams.get("requestId");
-    if (!requestId || !/^[A-Za-z0-9_-]{1,128}$/.test(requestId)) {
-      return NextResponse.json({ error: "A valid generation request ID is required." }, { status: 400 });
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${MODEL}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt, num_steps: 4 }),
+        cache: "no-store",
+      }
+    );
+
+    const result = await response.json();
+    const encodedImage = result?.result?.image;
+    if (!response.ok || result?.success === false || typeof encodedImage !== "string") {
+      const providerMessage = result?.errors?.[0]?.message;
+      return NextResponse.json(
+        { error: providerMessage || "Cloudflare could not generate this panel. Please try again." },
+        { status: response.status >= 400 && response.status < 600 ? response.status : 502 }
+      );
     }
-    const status = await fal.queue.status(ENDPOINT, { requestId });
-    if (status.status !== "COMPLETED") return NextResponse.json({ status: status.status });
-    const result = await fal.queue.result(ENDPOINT, { requestId });
-    const data = (result as any).data ?? result;
-    const imageUrl = data?.images?.[0]?.url;
-    if (!imageUrl || typeof imageUrl !== "string") {
-      return NextResponse.json({ error: "The image provider completed without returning an image." }, { status: 502 });
-    }
-    return NextResponse.json({ status: "COMPLETED", imageUrl, description: data.description ?? "" });
+
+    return NextResponse.json({
+      status: "COMPLETED",
+      imageUrl: `data:image/jpeg;base64,${encodedImage}`,
+    });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to check image generation.";
+    const message = error instanceof Error ? error.message : "Unable to generate this panel.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

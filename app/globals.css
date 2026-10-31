@@ -44,3 +44,18 @@
 
 /* Dialogue editing and lettering in the panel studio */
 .generated-card .generated-art-frame{position:relative;overflow:hidden;background:#17131d}.generated-card .generated-art-frame>img{display:block;width:100%;aspect-ratio:9/16;object-fit:cover}.generated-card .panel-lettering{padding:4%;gap:6px}.generated-card .panel-bubble{font-size:clamp(9px,1.1vw,12px);padding:6px 8px;max-width:90%;border-width:1px}.generated-dialogue-editor{display:grid;gap:9px;padding:10px;border-top:1px solid var(--line)}.generated-dialogue-editor>b{font:9px var(--mono);letter-spacing:1px;color:#a78bfa}.generated-dialogue-editor label{display:grid;gap:4px}.generated-dialogue-editor label small{font:8px var(--mono);color:#9c8cb8}.generated-dialogue-editor textarea{width:100%;resize:vertical;min-height:48px;background:#111115;color:#eeeef1;border:1px solid #393540;border-radius:5px;padding:7px;font:10px/1.5 var(--sans)}.generated-dialogue-editor textarea:focus{outline:1px solid #a78bfa;border-color:#a78bfa}.generated-card .generated-card-caption{border-bottom:1px solid var(--line)}
+
+.auth-gate{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 20%,#292039,#101012 62%);color:#eeeef1;font-family:var(--sans)}
+.auth-card{width:min(460px,100%);padding:36px 30px;text-align:center;background:#19171e;border:1px solid #393044;border-radius:16px;box-shadow:0 25px 90px #0008}
+.auth-card .brand-mark{margin:0 auto 22px;width:48px;height:48px}
+.auth-card .eyebrow{justify-content:center;margin-bottom:12px}
+.auth-card h1{font:500 32px var(--serif);margin:0 0 12px}
+.auth-card h1 em{color:#b49af8}
+.auth-card p{color:#a8a4b0;font-size:13px;line-height:1.7;margin:0 0 22px}
+.google-signin{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:13px 16px;border-radius:8px;background:#fff;color:#292929;text-decoration:none;font-size:13px;font-weight:700}
+.google-signin[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.google-g{font:bold 20px Arial;color:#4285f4}
+.auth-help{display:block;color:#888491;font-size:10px;line-height:1.6;margin-top:14px}
+.auth-alert{background:#38252b;border:1px solid #74414c;color:#f1b6c0;padding:10px 12px;border-radius:7px;font-size:11px;line-height:1.5;margin:0 0 15px}
+.profile-signout{border:0;background:none;color:#bba6f1;font-size:9px;padding:5px}
+.auth-avatar{object-fit:cover}

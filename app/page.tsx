@@ -20,7 +20,7 @@ const characters = [
  {name:"Lucien Vael",role:"Archbishop · 46",tag:"The false saint",desc:"A charismatic ruler of the Dawn Dominion who sustains his long life by stealing the shadows of innocents.",look:"White vestments · immaculate smile · sun sigil",color:"ivory",initials:"LV"},
  {name:"Elyra Veyr",role:"The missing mother",tag:"The memory-walker",desc:"Kael and Mira's vanished mother. She can travel through memories preserved in shadows—and knows the truth of the prison.",look:"Long black hair · hooded cloak · old pendant",color:"slate",initials:"EV"}
 ];
-const hostedCharacterImages:Record<string,string> = { Nythar: "https://i.postimg.cc/MGTNRZ2J/nyther-700kb.jpg", "Mira Veyr": "https://i.postimg.cc/MpsrWkcY/mira-700kb.jpg" };
+const hostedCharacterImages:Record<string,string> = { Nythar: "https://i.postimg.cc/MGTNRZ2J/nyther-700kb.jpg", "Mira Veyr": "https://i.postimg.cc/MpsrWkcY/mira-700kb.jpg", "Seraphine Valcrest": "https://i.postimg.cc/vmV7CC5r/seraphine-valcrest-700kb.jpg" };
 const lore = [
  ["The Dawn Dominion","A continent-spanning empire ruled in the name of the Eternal Dawn. Its Church teaches that light is purity and darkness is corruption."],
  ["The Nine Primordials","Nine ancient forces shaped reality. They were neither good nor evil. Their war left the world scarred and their history buried."],

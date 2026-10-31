@@ -39,9 +39,9 @@ export async function GET(request: NextRequest) {
 
     const verifyResponse = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(tokens.id_token), { cache: "no-store" });
     if (!verifyResponse.ok) return home(request, "identity_verification");
-    const identity = await verifyResponse.json() as { aud?: string; iss?: string; exp?: string; sub?: string; email?: string; email_verified?: string; name?: string; picture?: string };
+    const identity = await verifyResponse.json() as { aud?: string; iss?: string; exp?: string; sub?: string; email?: string; email_verified?: string | boolean; name?: string; picture?: string };
     if (identity.aud !== clientId || !["accounts.google.com", "https://accounts.google.com"].includes(identity.iss || "") ||
-        !identity.sub || !identity.email || identity.email_verified !== "true" ||
+        !identity.sub || !identity.email || (identity.email_verified !== "true" && identity.email_verified !== true) ||
         Number(identity.exp || 0) <= Math.floor(Date.now() / 1000)) return home(request, "identity_verification");
 
     const response = home(request);

@@ -54,7 +54,6 @@ const writeCharacterImage = async (name:string,data:string) => {
   tx.onabort=()=>{db.close();reject(tx.error);};
  });
 };
-const panelPrompt = "Dark fantasy Korean manhwa panel, cinematic vertical composition, Kael Veyr, seventeen-year-old boy with messy black hair and grey eyes, standing in a rain-soaked medieval alley beneath a blood-red moon. Two shadows stretch behind him; one moves independently and turns its head. Deep ink blacks, restrained violet glow, intricate linework, atmospheric rain, dramatic chiaroscuro, detailed background, no text, no watermark.";
 
 const chapterOnePanels = [
  {title:"The Kingdom Beneath the Red Moon",prompt:"Extreme wide establishing shot of Ashfall, a poor medieval mining district in the kingdom of Eryndor, ruined rooftops beneath an enormous blood-red moon, heavy diagonal rain, distant bell tower, thirteen ominous bells implied by atmosphere. No people in foreground. Dark fantasy Korean manhwa illustration, elegant fine ink linework, painterly cel shading, cinematic vertical webtoon panel, deep blacks, muted crimson and cold blue-grey palette, detailed architecture, no text, no lettering, no watermark."},
@@ -93,8 +92,6 @@ export default function Home() {
  const [query,setQuery] = useState("");
  const [notice,setNotice] = useState("");
  const [mobileOpen,setMobileOpen] = useState(false);
- const [prompt,setPrompt] = useState(panelPrompt);
- const [panelName,setPanelName] = useState("The Boy Who Cast Two Shadows");
  const [generatedPanels,setGeneratedPanels] = useState<{id:number;title:string;url:string}[]>([]);
  const [isGenerating,setIsGenerating] = useState(false);
  const [generationProgress,setGenerationProgress] = useState(0);

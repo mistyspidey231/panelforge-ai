@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Aperture, BookOpen, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clapperboard, Clock3, Command, Compass, Download, Eye, FileText, Film, FolderOpen, Gauge, ImagePlus, Layers3, Library, Menu, MessageSquare, MoreHorizontal, PanelTop, Plus, Search, Settings2, Sparkles, WandSparkles, X } from "lucide-react";
+import { Aperture, BookOpen, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clapperboard, Clock3, Command, Compass, Download, Eye, FileText, Film, FolderOpen, Gauge, ImagePlus, Layers3, Library, Menu, MessageSquare, MoreHorizontal, PanelTop, Plus, RefreshCw, Search, Settings2, Sparkles, WandSparkles, X } from "lucide-react";
 
 const arcs = [
  {name:"The Boy Without a Shadow",range:"01–20",chapters:["The Boy Who Cast Two Shadows","A Voice Beneath the Floor","The Night the Faceless Came","Permission","The First Awakening","The Girl Who Saw the Monster","A Thousand-Year-Old Voice","The Church's Black List","The Inquisitor Arrives","A Shadow That Bleeds","The Man Without a Reflection","The Price of Darkness","The Forgotten Pendant","The Village That Disappeared","A Name from the Beginning","The Heretic Knight","The Execution Order","A God in Chains","The First Eclipse","The Boy the Sun Feared"]},

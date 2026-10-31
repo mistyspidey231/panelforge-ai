@@ -65,7 +65,30 @@ export default function Home() {
  const [characterImages,setCharacterImages] = useState<Record<string,string>>({});
  useEffect(()=>{try{const savedPrompts=localStorage.getItem("panelforge-character-prompts");if(savedPrompts)setCharacterPrompts(JSON.parse(savedPrompts));const savedImages=localStorage.getItem("panelforge-character-images");if(savedImages)setCharacterImages(JSON.parse(savedImages));}catch{}},[]);
  const saveCharacterPrompt = (name:string,value:string) => {setCharacterPrompts(previous=>{const next={...previous,[name]:value};try{localStorage.setItem("panelforge-character-prompts",JSON.stringify(next));}catch{}return next;});};
- const handleCharacterImageUpload = async (name:string,file?:File) => {if(!file)return;if(!file.type.startsWith("image/")){toast("Please choose an image file.");return;}if(file.size>12000000){toast("Please choose an image smaller than 12 MB.");return;}try{const bitmap=await createImageBitmap(file);const scale=Math.min(1,900/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));const context=canvas.getContext("2d");if(!context){bitmap.close();toast("This browser could not prepare the image.");return;}context.fillStyle="#ffffff";context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();const data=canvas.toDataURL("image/jpeg",0.72);if(!data||data.length>650000){toast("This image is still too large. Try a smaller picture.");return;}setCharacterImages(previous=>{const next={...previous,[name]:data};try{localStorage.setItem("panelforge-character-images",JSON.stringify(next));}catch{toast("Browser storage is full. Remove an old reference image or use a smaller picture.");return previous;}return next;});toast(name+" reference image saved");}catch{toast("Could not read that image. Try a JPG or PNG file.");}};
+ const handleCharacterImageUpload = async (name:string,file?:File) => {
+  if(!file)return;
+  if(!file.type.startsWith("image/")){toast("Please choose an image file.");return;}
+  if(file.size>12000000){toast("Please choose an image smaller than 12 MB.");return;}
+  try{
+   const bitmap=await createImageBitmap(file);
+   const scale=Math.min(1,900/Math.max(bitmap.width,bitmap.height));
+   const canvas=document.createElement("canvas");
+   canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+   canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+   const context=canvas.getContext("2d");
+   if(!context){bitmap.close();toast("This browser could not prepare the image.");return;}
+   context.fillStyle="#ffffff";
+   context.fillRect(0,0,canvas.width,canvas.height);
+   context.drawImage(bitmap,0,0,canvas.width,canvas.height);
+   bitmap.close();
+   const data=canvas.toDataURL("image/jpeg",0.72);
+   if(!data||data.length>650000){toast("This image is still too large. Try a smaller picture.");return;}
+   const next={...characterImages,[name]:data};
+   setCharacterImages(next);
+   try{localStorage.setItem("panelforge-character-images",JSON.stringify(next));toast(name+" reference image saved");}
+   catch{toast(name+" image is visible now, but browser storage is full so it may not remain after refresh.");}
+  }catch{toast("Could not read that image. Try a JPG or PNG file.");}
+ };
 
  const handleReferenceUpload = async (file?: File) => {
   if (!file) return;

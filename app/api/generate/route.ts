@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${apiToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt, num_steps: 4 }),
+        body: JSON.stringify({ prompt, steps: 4 }),
         cache: "no-store",
       }
     );

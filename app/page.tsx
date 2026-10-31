@@ -162,7 +162,58 @@ export default function Home() {
   }
  };
  useEffect(()=>{try{const saved=localStorage.getItem("panelforge-ch1-panels");if(saved)setGeneratedPanels(JSON.parse(saved));}catch{}},[]);
- const generateChapter = async()=>{if(isGenerating)return;setIsGenerating(true);setGenerationProgress(0);setGenerationMessage("Preparing Chapter 1...");try{for(let i=0;i<chapterOnePanels.length;i++){const scene=chapterOnePanels[i];if(generatedPanels.some(item=>item.id===i+1)){setGenerationProgress(i+1);continue;}setGenerationMessage("Generating panel "+(i+1)+" of "+chapterOnePanels.length+": "+scene.title);const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:scene.prompt + " Art direction: " + artStyle + ". Use the uploaded character reference image as the main visual guide. Keep the same character identity, face, hairstyle, eye colour, clothing and distinctive details consistent; adapt pose, expression and camera angle to this scene.",imageBase64:referenceImage,imageUrls:!referenceImage?[...( /Nythar|First Shadow/.test(scene.prompt)?[hostedCharacterImages.Nythar]:[]),...( /Mira/.test(scene.prompt)?[hostedCharacterImages["Mira Veyr"]]:[]),...( /Lucien|Archbishop/.test(scene.prompt)?[hostedCharacterImages["Lucien Vael"]]:[]),...( /Seraphine/.test(scene.prompt)?[hostedCharacterImages["Seraphine Valcrest"]]:[]),...( /Elyra/.test(scene.prompt)?[hostedCharacterImages["Elyra Veyr"]]:[])]:[]})});const result=await response.json();if(!response.ok)throw new Error(result.error||"Could not generate panel "+(i+1));if(!result.imageUrl)throw new Error("The image service did not return panel "+(i+1));const panel={id:i+1,title:scene.title,url:result.imageUrl};setGeneratedPanels(previous=>{const next=[...previous.filter(item=>item.id!==panel.id),panel].sort((a,b)=>a.id-b.id);try{localStorage.setItem("panelforge-ch1-panels",JSON.stringify(next));}catch{}return next;});setGenerationProgress(i+1);}setGenerationMessage("Chapter 1 artwork generated.");}catch(error){setGenerationMessage(error instanceof Error?error.message:"Something went wrong.");}finally{setIsGenerating(false);}};
+ const generateChapter = async()=>{
+  if(isGenerating)return;
+  setIsGenerating(true);
+  setGenerationProgress(0);
+  setGenerationMessage("Preparing Chapter 1...");
+  try{
+   for(let i=0;i<chapterOnePanels.length;i++){
+    const scene=chapterOnePanels[i];
+    if(generatedPanels.some(item=>item.id===i+1)){setGenerationProgress(i+1);continue;}
+    setGenerationMessage("Generating panel "+(i+1)+" of "+chapterOnePanels.length+": "+scene.title);
+    const sceneCharacters=characters.filter(character=>scene.prompt.toLowerCase().includes(character.name.toLowerCase()) || (character.name==="Nythar" && /first shadow/i.test(scene.prompt)));
+    const characterDirections=sceneCharacters.map(character=>characterPrompts[character.name]?.trim()).filter(Boolean);
+    const imageBase64s:string[]=[];
+    const imageUrls:string[]=[];
+    if(referenceImage)imageBase64s.push(referenceImage);
+    for(const character of sceneCharacters){
+     if(imageBase64s.length+imageUrls.length>=4)break;
+     const uploaded=characterImages[character.name];
+     if(uploaded?.startsWith("data:image/")){
+      const encoded=uploaded.split(",")[1];
+      if(encoded)imageBase64s.push(encoded);
+     }else if(hostedCharacterImages[character.name]){
+      imageUrls.push(hostedCharacterImages[character.name]);
+     }
+    }
+    const promptWithDirection=scene.prompt
+     +" Art direction: "+artStyle+". Keep the established series art style, line weight, lighting and palette consistent across every panel."
+     +" Preserve the exact appearance of the supplied character reference images. Keep faces, hairstyles, eye colours, clothing and distinctive details consistent while adapting pose, expression and camera angle to this scene."
+     +(characterDirections.length?" Character-specific drawing notes: "+characterDirections.join(" | "):"");
+    const response=await fetch("/api/generate",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({prompt:promptWithDirection,imageBase64s,imageUrls})
+    });
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error||"Could not generate panel "+(i+1));
+    if(!result.imageUrl)throw new Error("The image service did not return panel "+(i+1));
+    const panel={id:i+1,title:scene.title,url:result.imageUrl};
+    setGeneratedPanels(previous=>{
+     const next=[...previous.filter(item=>item.id!==panel.id),panel].sort((a,b)=>a.id-b.id);
+     try{localStorage.setItem("panelforge-ch1-panels",JSON.stringify(next));}catch{}
+     return next;
+    });
+    setGenerationProgress(i+1);
+   }
+   setGenerationMessage("Chapter 1 artwork generated.");
+  }catch(error){
+   setGenerationMessage(error instanceof Error?error.message:"Something went wrong.");
+  }finally{
+   setIsGenerating(false);
+  }
+ }
  const activeArc = arcs[arc];
  const filtered = useMemo(()=>characters.filter(c=>(c.name+" "+c.role+" "+c.desc).toLowerCase().includes(query.toLowerCase())),[query]);
  const go = (t:Tab)=>{setTab(t);setMobileOpen(false);};

@@ -59,15 +59,15 @@ export async function POST(request: NextRequest) {
       ...(referenceUrls.length ? { image_urls: referenceUrls } : {}),
     };
     const result = await fal.subscribe(endpoint, { input });
-    const imageUrl = result.data?.images?.[0]?.url;
+    const generatedImageUrl = result.data?.images?.[0]?.url;
 
-    if (typeof imageUrl !== "string" || !imageUrl.startsWith("https://")) {
+    if (typeof generatedImageUrl !== "string" || !generatedImageUrl.startsWith("https://")) {
       return NextResponse.json({ error: "The image service finished without returning a usable image. Please try again." }, { status: 502 });
     }
 
     return NextResponse.json({
       status: "COMPLETED",
-      imageUrl,
+      imageUrl: generatedImageUrl,
       description: result.data?.description || "",
     });
   } catch (error) {

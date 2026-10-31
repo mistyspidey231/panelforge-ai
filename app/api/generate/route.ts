@@ -1,4 +1,3 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import { fal } from "@fal-ai/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,15 +8,6 @@ function configureFal() {
   const key = process.env.FAL_KEY;
   if (!key) throw new Error("Image generation is not configured yet. Add FAL_KEY to the PanelForge server environment.");
   fal.config({ credentials: key });
-}
-
-function authorized(request: NextRequest) {
-  const expected = process.env.PANELFORGE_GENERATION_PASSWORD;
-  const supplied = request.headers.get("x-generation-password") || "";
-  if (!expected || !supplied) return false;
-  const expectedHash = createHash("sha256").update(expected).digest();
-  const suppliedHash = createHash("sha256").update(supplied).digest();
-  return timingSafeEqual(expectedHash, suppliedHash);
 }
 
 function rateLimit(request: NextRequest, action: "submit" | "poll") {
@@ -37,7 +27,6 @@ function rateLimit(request: NextRequest, action: "submit" | "poll") {
 }
 
 export async function POST(request: NextRequest) {
-  if (!authorized(request)) return NextResponse.json({ error: "Enter the correct generation password." }, { status: 401 });
   if (!rateLimit(request, "submit")) return NextResponse.json({ error: "Generation limit reached for this hour. Please try again later." }, { status: 429 });
   try {
     configureFal();

@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         ).slice(0, 4)
       : [];
 
-    if (imageBase64.length > 1_400_000 || imageBase64s.some(value => value.length > 1_400_000)) {
+    if (imageBase64.length > 1_400_000 || imageBase64s.some((value: string) => value.length > 1_400_000)) {
       return NextResponse.json({ error: "The reference image is too large after compression. Please choose another image." }, { status: 413 });
     }
     if ([imageBase64, ...imageBase64s].some(value => value && !/^[A-Za-z0-9+/]+={0,2}$/.test(value))) {

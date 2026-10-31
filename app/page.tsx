@@ -121,7 +121,7 @@ export default function Home() {
   if (file.size > 12000000) { toast("Please choose an image smaller than 12 MB."); return; }
   try {
    const bitmap = await createImageBitmap(file);
-   const maxDimension = 1280;
+   const maxDimension = 1024;
    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
    const canvas = document.createElement("canvas");
    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
@@ -132,9 +132,27 @@ export default function Home() {
    context.fillRect(0, 0, canvas.width, canvas.height);
    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
    bitmap.close();
-   const dataUrl = canvas.toDataURL("image/jpeg", 0.78);
-   const encoded = dataUrl.split(",")[1] || "";
-   if (!encoded || encoded.length > 2000000) { toast("Could not prepare that image. Try a smaller picture."); return; }
+   let dataUrl = "";
+   let encoded = "";
+   for (const quality of [0.72, 0.62, 0.52, 0.42, 0.32]) {
+    dataUrl = canvas.toDataURL("image/jpeg", quality);
+    encoded = dataUrl.split(",")[1] || "";
+    if (encoded && encoded.length <= 1400000) break;
+   }
+   if (!encoded || encoded.length > 1400000) {
+    const smaller = document.createElement("canvas");
+    const smallerScale = 768 / Math.max(canvas.width, canvas.height);
+    smaller.width = Math.max(1, Math.round(canvas.width * smallerScale));
+    smaller.height = Math.max(1, Math.round(canvas.height * smallerScale));
+    const smallerContext = smaller.getContext("2d");
+    if (!smallerContext) { toast("This browser could not prepare the image."); return; }
+    smallerContext.fillStyle = "#ffffff";
+    smallerContext.fillRect(0, 0, smaller.width, smaller.height);
+    smallerContext.drawImage(canvas, 0, 0, smaller.width, smaller.height);
+    dataUrl = smaller.toDataURL("image/jpeg", 0.48);
+    encoded = dataUrl.split(",")[1] || "";
+   }
+   if (!encoded || encoded.length > 1400000) { toast("This image could not be compressed on this device. Try a JPG or PNG."); return; }
    setReferenceImage(encoded);
    setReferencePreview(dataUrl);
    toast("Character reference added");

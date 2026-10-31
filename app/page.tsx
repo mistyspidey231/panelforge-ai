@@ -27,6 +27,32 @@ const lore = [
  ["The price of power","Memory is the first thing taken. Then emotion, identity, and finally the boundary between the vessel and the god."]
 ];
 const stages = ["Flicker","Manifestation","Dominion","Eclipse","Abyssal Crown"];
+const CHARACTER_IMAGE_DB = "panelforge-character-store";
+const CHARACTER_IMAGE_STORE = "images";
+const openCharacterImageDB = () => new Promise<IDBDatabase>((resolve,reject) => {
+ const request=indexedDB.open(CHARACTER_IMAGE_DB,1);
+ request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(CHARACTER_IMAGE_STORE))db.createObjectStore(CHARACTER_IMAGE_STORE);};
+ request.onsuccess=()=>resolve(request.result);
+ request.onerror=()=>reject(request.error);
+});
+const readCharacterImages = async () => {
+ const db=await openCharacterImageDB();
+ return new Promise<Record<string,string>>((resolve,reject)=>{
+  const request=db.transaction(CHARACTER_IMAGE_STORE,"readonly").objectStore(CHARACTER_IMAGE_STORE).getAll();
+  request.onsuccess=()=>{const keys=request.result as string[];const keyRequest=db.transaction(CHARACTER_IMAGE_STORE,"readonly").objectStore(CHARACTER_IMAGE_STORE).getAllKeys();keyRequest.onsuccess=()=>{const result:Record<string,string>={};(keyRequest.result as IDBValidKey[]).forEach((key,i)=>{if(typeof key==="string"&&keys[i])result[key]=keys[i] as string;});db.close();resolve(result);};keyRequest.onerror=()=>{db.close();reject(keyRequest.error);};};
+  request.onerror=()=>{db.close();reject(request.error);};
+ });
+};
+const writeCharacterImage = async (name:string,data:string) => {
+ const db=await openCharacterImageDB();
+ return new Promise<void>((resolve,reject)=>{
+  const tx=db.transaction(CHARACTER_IMAGE_STORE,"readwrite");
+  tx.objectStore(CHARACTER_IMAGE_STORE).put(data,name);
+  tx.oncomplete=()=>{db.close();resolve();};
+  tx.onerror=()=>{db.close();reject(tx.error);};
+  tx.onabort=()=>{db.close();reject(tx.error);};
+ });
+};
 const panelPrompt = "Dark fantasy Korean manhwa panel, cinematic vertical composition, Kael Veyr, seventeen-year-old boy with messy black hair and grey eyes, standing in a rain-soaked medieval alley beneath a blood-red moon. Two shadows stretch behind him; one moves independently and turns its head. Deep ink blacks, restrained violet glow, intricate linework, atmospheric rain, dramatic chiaroscuro, detailed background, no text, no watermark.";
 
 const chapterOnePanels = [
@@ -63,7 +89,7 @@ export default function Home() {
  const [selectedCharacterName,setSelectedCharacterName] = useState("");
  const [characterPrompts,setCharacterPrompts] = useState<Record<string,string>>({});
  const [characterImages,setCharacterImages] = useState<Record<string,string>>({});
- useEffect(()=>{try{const savedPrompts=localStorage.getItem("panelforge-character-prompts");if(savedPrompts)setCharacterPrompts(JSON.parse(savedPrompts));const savedImages=localStorage.getItem("panelforge-character-images");if(savedImages)setCharacterImages(JSON.parse(savedImages));}catch{}},[]);
+ useEffect(()=>{let active=true;try{const savedPrompts=localStorage.getItem("panelforge-character-prompts");if(savedPrompts)setCharacterPrompts(JSON.parse(savedPrompts));}catch{};(async()=>{try{const images=await readCharacterImages();if(Object.keys(images).length){if(active)setCharacterImages(images);}else{const legacy=localStorage.getItem("panelforge-character-images");if(legacy){const parsed=JSON.parse(legacy) as Record<string,string>;for(const [name,data] of Object.entries(parsed))await writeCharacterImage(name,data);if(active)setCharacterImages(parsed);localStorage.removeItem("panelforge-character-images");}}}catch{const legacy=localStorage.getItem("panelforge-character-images");if(legacy&&active){try{setCharacterImages(JSON.parse(legacy));}catch{}}}})();return()=>{active=false;};},[]);
  const saveCharacterPrompt = (name:string,value:string) => {setCharacterPrompts(previous=>{const next={...previous,[name]:value};try{localStorage.setItem("panelforge-character-prompts",JSON.stringify(next));}catch{}return next;});};
  const handleCharacterImageUpload = async (name:string,file?:File) => {
   if(!file)return;
@@ -82,11 +108,10 @@ export default function Home() {
    context.drawImage(bitmap,0,0,canvas.width,canvas.height);
    bitmap.close();
    const data=canvas.toDataURL("image/jpeg",0.72);
-   if(!data||data.length>650000){toast("This image is still too large. Try a smaller picture.");return;}
    const next={...characterImages,[name]:data};
    setCharacterImages(next);
-   try{localStorage.setItem("panelforge-character-images",JSON.stringify(next));toast(name+" reference image saved");}
-   catch{toast(name+" image is visible now, but browser storage is full so it may not remain after refresh.");}
+   try{await writeCharacterImage(name,data);toast(name+" reference image saved on this device");}
+   catch{toast(name+" image is visible now, but this browser could not save it. Check available device storage.");}
   }catch{toast("Could not read that image. Try a JPG or PNG file.");}
  };
 

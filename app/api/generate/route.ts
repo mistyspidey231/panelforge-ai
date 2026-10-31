@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fal } from "@fal-ai/client";
 
-const MODEL = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
+const TEXT_ENDPOINT = "google/nano-banana-2.1";
+const EDIT_ENDPOINT = "google/nano-banana-2.1/edit";
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function rateLimit(request: NextRequest) {
@@ -23,18 +25,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Generation limit reached for this hour. Please try again later." }, { status: 429 });
   }
 
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-  if (!accountId || !apiToken) {
-    return NextResponse.json({ error: "Free image generation is not connected yet. Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to the server environment." }, { status: 503 });
+  const apiKey = process.env.FAL_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "Image generation is not connected yet. Add the FAL_KEY environment variable to the PanelForge service on Render." }, { status: 503 });
   }
 
   try {
     const body = await request.json();
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64 : "";
-    if (imageBase64.length > 2_100_000) {
-      return NextResponse.json({ error: "Reference image is too large. Please upload an image smaller than 1.5 MB." }, { status: 413 });
+
+    if (imageBase64.length > 1_400_000) {
+      return NextResponse.json({ error: "The reference image is too large after compression. Please choose another image." }, { status: 413 });
     }
     if (imageBase64 && !/^[A-Za-z0-9+/]+={0,2}$/.test(imageBase64)) {
       return NextResponse.json({ error: "The reference image could not be read. Please upload it again." }, { status: 400 });
@@ -43,41 +45,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "A valid image prompt is required." }, { status: 400 });
     }
 
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${MODEL}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-          width: 768,
-          height: 1024,
-          num_steps: 8,
-          ...(imageBase64 ? { image_b64: imageBase64, strength: 0.55 } : {}),
-        }),
-        cache: "no-store",
-      }
-    );
+    fal.config({ credentials: apiKey });
+    const endpoint = imageBase64 ? EDIT_ENDPOINT : TEXT_ENDPOINT;
+    const input = {
+      prompt,
+      aspect_ratio: "3:4",
+      resolution: "1K",
+      output_format: "jpeg",
+      num_images: 1,
+      ...(imageBase64 ? { image_urls: [`data:image/jpeg;base64,${imageBase64}`] } : {}),
+    };
+    const result = await fal.subscribe(endpoint, { input });
+    const imageUrl = result.data?.images?.[0]?.url;
 
-    const result = await response.json();
-    const encodedImage = result?.result?.image;
-    if (!response.ok || result?.success === false || typeof encodedImage !== "string") {
-      const providerMessage = result?.errors?.[0]?.message;
-      return NextResponse.json(
-        { error: providerMessage || "Cloudflare could not generate this panel. Please try again." },
-        { status: response.status >= 400 && response.status < 600 ? response.status : 502 }
-      );
+    if (typeof imageUrl !== "string" || !imageUrl.startsWith("https://")) {
+      return NextResponse.json({ error: "The image service finished without returning a usable image. Please try again." }, { status: 502 });
     }
 
     return NextResponse.json({
       status: "COMPLETED",
-      imageUrl: `data:image/jpeg;base64,${encodedImage}`,
+      imageUrl,
+      description: result.data?.description || "",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to generate this panel.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const safeMessage = message.toLowerCase().includes("unauthorized") || message.toLowerCase().includes("invalid key")
+      ? "The FAL_KEY on Render was rejected. Check that the correct fal.ai key is saved in the service environment."
+      : message;
+    return NextResponse.json({ error: safeMessage }, { status: 502 });
   }
 }

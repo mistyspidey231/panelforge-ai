@@ -67,21 +67,32 @@ export default function Home() {
  const saveCharacterPrompt = (name:string,value:string) => {setCharacterPrompts(previous=>{const next={...previous,[name]:value};try{localStorage.setItem("panelforge-character-prompts",JSON.stringify(next));}catch{}return next;});};
  const handleCharacterImageUpload = (name:string,file?:File) => {if(!file)return;if(!file.type.startsWith("image/")){toast("Please choose an image file.");return;}if(file.size>700000){toast("Please use an image smaller than 700 KB.");return;}const reader=new FileReader();reader.onload=()=>{const data=typeof reader.result==="string"?reader.result:"";if(!data){toast("Could not read that image.");return;}setCharacterImages(previous=>{const next={...previous,[name]:data};try{localStorage.setItem("panelforge-character-images",JSON.stringify(next));}catch{toast("Browser storage is full. Try a smaller image.");return previous;}return next;});toast(name+" reference image saved");};reader.onerror=()=>toast("Could not read that image.");reader.readAsDataURL(file);};
 
- const handleReferenceUpload = (file?: File) => {
+ const handleReferenceUpload = async (file?: File) => {
   if (!file) return;
   if (!file.type.startsWith("image/")) { toast("Please choose an image file."); return; }
-  if (file.size > 1500000) { toast("Please use an image smaller than 1.5 MB."); return; }
-  const reader = new FileReader();
-  reader.onload = () => {
-   const dataUrl = typeof reader.result === "string" ? reader.result : "";
+  if (file.size > 12000000) { toast("Please choose an image smaller than 12 MB."); return; }
+  try {
+   const bitmap = await createImageBitmap(file);
+   const maxDimension = 1280;
+   const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+   const canvas = document.createElement("canvas");
+   canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+   canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+   const context = canvas.getContext("2d");
+   if (!context) { bitmap.close(); toast("This browser could not prepare the image."); return; }
+   context.fillStyle = "#ffffff";
+   context.fillRect(0, 0, canvas.width, canvas.height);
+   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+   bitmap.close();
+   const dataUrl = canvas.toDataURL("image/jpeg", 0.78);
    const encoded = dataUrl.split(",")[1] || "";
-   if (!encoded) { toast("Could not read that image."); return; }
+   if (!encoded || encoded.length > 2000000) { toast("Could not prepare that image. Try a smaller picture."); return; }
    setReferenceImage(encoded);
    setReferencePreview(dataUrl);
    toast("Character reference added");
-  };
-  reader.onerror = () => toast("Could not read that image.");
-  reader.readAsDataURL(file);
+  } catch {
+   toast("Could not read that image. Try a JPG or PNG file.");
+  }
  };
  useEffect(()=>{try{const saved=localStorage.getItem("panelforge-ch1-panels");if(saved)setGeneratedPanels(JSON.parse(saved));}catch{}},[]);
  const generateChapter = async()=>{if(isGenerating)return;setIsGenerating(true);setGenerationProgress(0);setGenerationMessage("Preparing Chapter 1...");try{for(let i=0;i<chapterOnePanels.length;i++){const scene=chapterOnePanels[i];setGenerationMessage("Generating panel "+(i+1)+" of "+chapterOnePanels.length+": "+scene.title);const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:scene.prompt + " Art direction: " + artStyle + ". Use the uploaded character reference image as the main visual guide. Keep the same character identity, face, hairstyle, eye colour, clothing and distinctive details consistent; adapt pose, expression and camera angle to this scene.",imageBase64:referenceImage})});const result=await response.json();if(!response.ok)throw new Error(result.error||"Could not generate panel "+(i+1));if(!result.imageUrl)throw new Error("The image service did not return panel "+(i+1));const panel={id:i+1,title:scene.title,url:result.imageUrl};setGeneratedPanels(previous=>{const next=[...previous.filter(item=>item.id!==panel.id),panel].sort((a,b)=>a.id-b.id);try{localStorage.setItem("panelforge-ch1-panels",JSON.stringify(next));}catch{}return next;});setGenerationProgress(i+1);}setGenerationMessage("Chapter 1 artwork generated.");}catch(error){setGenerationMessage(error instanceof Error?error.message:"Something went wrong.");}finally{setIsGenerating(false);}};

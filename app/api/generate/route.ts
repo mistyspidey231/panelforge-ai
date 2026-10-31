@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MODEL = "@cf/black-forest-labs/flux-1-schnell";
+const MODEL = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function rateLimit(request: NextRequest) {
@@ -32,6 +32,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+    const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64 : "";
+    if (imageBase64.length > 2_100_000) {
+      return NextResponse.json({ error: "Reference image is too large. Please upload an image smaller than 1.5 MB." }, { status: 413 });
+    }
+    if (imageBase64 && !/^[A-Za-z0-9+/]+={0,2}$/.test(imageBase64)) {
+      return NextResponse.json({ error: "The reference image could not be read. Please upload it again." }, { status: 400 });
+    }
     if (prompt.length < 3 || prompt.length > 50000) {
       return NextResponse.json({ error: "A valid image prompt is required." }, { status: 400 });
     }
@@ -44,7 +51,13 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${apiToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt, steps: 4 }),
+        body: JSON.stringify({
+          prompt,
+          width: 768,
+          height: 1024,
+          num_steps: 8,
+          ...(imageBase64 ? { image_b64: imageBase64, strength: 0.55 } : {}),
+        }),
         cache: "no-store",
       }
     );

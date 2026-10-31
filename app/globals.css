@@ -23,3 +23,21 @@
 .reader-scene .reader-generated-image { display: block; width: 100%; height: auto; margin: 22px auto 0; }
 .reader-scene-caption { margin: 10px 0 18px; color: #a9a4b8; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; text-align: center; }
 .reader-scene .reader-panel-placeholder { margin: 22px auto 0; }
+
+
+/* Speech lettering layered over each Chapter 1 artwork panel. */
+.reader-panel-frame{position:relative;width:100%;max-width:100%;margin:22px auto 0;overflow:hidden;background:#17131d}
+.reader-panel-frame .reader-generated-image{width:100%;max-width:100%;margin:0 auto;display:block}
+.reader-panel-frame .reader-panel-placeholder{margin:0 auto;min-height:390px}
+.panel-lettering{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;padding:5% 4%;pointer-events:none;gap:10px}
+.panel-bubble{display:flex;flex-direction:column;gap:3px;max-width:82%;padding:9px 13px 10px;background:#fffdf8;color:#211c25;border:2px solid #28212b;border-radius:17px 17px 17px 5px;box-shadow:0 3px 9px #0007;font:600 clamp(11px,2.3vw,15px)/1.35 Georgia,serif}
+.panel-bubble small{font:700 8px/1.2 Arial,sans-serif;letter-spacing:1.1px;color:#76627a}
+.panel-bubble span{overflow-wrap:anywhere}
+.panel-bubble.align-right{align-self:flex-end;border-radius:17px 17px 5px 17px}
+.panel-bubble.shadow{background:#17121f;color:#f1e8ff;border-color:#9a75bd;border-radius:18px 18px 5px 18px;box-shadow:0 0 18px #8b5ac655}
+.panel-bubble.shadow small{color:#c5a6f2}
+.panel-bubble.thought{background:#f4f0fa;border-style:dashed;border-radius:22px;color:#393047}
+.panel-bubble.caption{max-width:90%;align-self:center;text-align:center;background:#211a25eF;color:#fff0e5;border:1px solid #b58b9e;border-radius:3px;padding:7px 11px;font:700 clamp(9px,1.9vw,12px)/1.45 Arial,sans-serif;letter-spacing:.5px}
+.panel-bubble.caption small{display:none}
+.reader-scene-caption{font:700 9px/1.5 Arial,sans-serif;letter-spacing:1.4px;color:#806b7a;text-transform:uppercase;text-align:center;margin:10px 0 26px}
+@media(max-width:600px){.panel-lettering{padding:4%;gap:7px}.panel-bubble{max-width:88%;padding:7px 9px;font-size:11px}.panel-bubble small{font-size:7px}.reader-panel-frame .reader-panel-placeholder{min-height:310px}}

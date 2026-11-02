@@ -70,7 +70,20 @@ function parseJson(raw: string) {
 }
 
 export default function ChapterProductionPage() {
-  const [authReady,setAuthReady] = useState(false);\n  useEffect(() => { let active = true; fetch("/api/auth/session",{cache:"no-store"}).then(response=>response.json()).then(data=>{ if(!active)return; if(data.user) setAuthReady(true); else window.location.href="/"; }).catch(()=>{ if(active) window.location.href="/"; }); return ()=>{active=false;}; }, []);\n  const [arcIndex,setArcIndex] = useState(0);
+  const [authReady,setAuthReady] = useState(false);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/auth/session", { cache: "no-store" })
+      .then(response => response.json())
+      .then(data => {
+        if (!active) return;
+        if (data.user) setAuthReady(true);
+        else window.location.href = "/";
+      })
+      .catch(() => { if (active) window.location.href = "/"; });
+    return () => { active = false; };
+  }, []);
+  const [arcIndex,setArcIndex] = useState(0);
   const [chapterIndex,setChapterIndex] = useState(0);
   const [scripts,setScripts] = useState<PanelScript[]>([]);
   const [art,setArt] = useState<Artwork[]>([]);
@@ -179,7 +192,9 @@ export default function ChapterProductionPage() {
   };
   const downloadArt = (item:Artwork) => {const a=document.createElement("a");a.href=item.url;a.download="chapter-"+number+"-panel-"+(item.index+1)+".jpg";a.click();};
 
-  if(!authReady) return <main className="production-page"><div className="production-wrap"><p>Checking your secure workspace…</p></div></main>;\n\n  return <main className="production-page">
+  if(!authReady) return <main className="production-page"><div className="production-wrap"><p>Checking your secure workspace…</p></div></main>;
+
+  return <main className="production-page">
     <header className="production-top"><a href="/" className="production-brand"><Aperture size={22}/> PanelForge <em>AI</em></a><a href="/" className="back-link"><ChevronLeft size={16}/> Workspace</a></header>
     <div className="production-wrap">
       <div className="production-heading"><div className="eyebrow">AI STORYBOARD + IMAGE WORKSHOP · 210 CHAPTERS</div><h1>Every chapter becomes <em>a manhwa.</em></h1><p>Choose any chapter. Abdiz creates its scene script, dialogue and narration; the image generator then illustrates each panel in sequence.</p></div>

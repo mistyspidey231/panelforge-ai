@@ -1,18 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Aperture, BookOpen, ChevronLeft, ChevronRight, ImagePlus, LoaderCircle, Sparkles, WandSparkles, RefreshCw, Download } from "lucide-react";
 
 const arcs = [
-  { name: "The Boy Without a Shadow", chapters: ["The Boy Who Cast Two Shadows","A Voice Beneath the Floor","The Night the Faceless Came","Permission","The First Awakening","The Girl Who Saw the Monster","A Thousand-Year-Old Voice","The Church's Black List","The Inquisitor Arrives","A Shadow That Bleeds","The Man Without a Reflection","The Price of Darkness","The Forgotten Pendant","The Village That Disappeared","A Name from the Beginning","The Heretic Knight","The Execution Order","A God in Chains","The First Eclipse","The Boy the Sun Feared"] },
-  { name: "Church of False Light", chapters: ["The Road to Solmire","A City Without Night","The Saint's Invitation","A Cage Made of Gold","The Inquisitor's Secret","The Chapel of Stolen Names","A Sermon for the Dead","The Sun Beneath the Cathedral"] },
-  { name: "Forest That Remembers", chapters: ["Where Trees Keep Secrets","The Path That Moves","A Thousand Borrowed Faces","The Hollow Sea"] },
-  { name: "Blood of the Firstborn", chapters: ["The Girl in the Old Memory","A Mother's Footsteps","The Shape of a Soul","The Shadow That Was Lost"] },
-  { name: "Seven Broken Thrones", chapters: ["The First Broken Throne","A God in the Ashes","The Clockwork of Fate","The Flame That Remembers"] },
-  { name: "War of Two Heavens", chapters: ["The Last Sermon","When Heaven Fell","The War Beneath the Sun","A World Unmade"] },
-  { name: "End of All Shadows", chapters: ["The Prison Is a World","The Name Before Names","The Sleeping Enemy","The Last Guardian"] },
-  { name: "Last Dawn", chapters: ["A Sky Without Gods","The Weight of Morning","What Remains of Us","The Last Shadow"] }
+  { name: "The Boy Without a Shadow", range: "01–20", chapters: ["The Boy Who Cast Two Shadows","A Voice Beneath the Floor","The Night the Faceless Came","Permission","The First Awakening","The Girl Who Saw the Monster","A Thousand-Year-Old Voice","The Church's Black List","The Inquisitor Arrives","A Shadow That Bleeds","The Man Without a Reflection","The Price of Darkness","The Forgotten Pendant","The Village That Disappeared","A Name from the Beginning","The Heretic Knight","The Execution Order","A God in Chains","The First Eclipse","The Boy the Sun Feared"] },
+  { name: "Church of False Light", range: "21–45", chapters: ["The Road to Solmire","A City Without Night","The Saint's Invitation","A Cage Made of Gold","The Inquisitor's Secret","The Chapel of Stolen Names","A Sermon for the Dead","The Sun Beneath the Cathedral"] },
+  { name: "Forest That Remembers", range: "46–70", chapters: ["Where Trees Keep Secrets","The Path That Moves","A Thousand Borrowed Faces","The Hollow Sea"] },
+  { name: "Blood of the Firstborn", range: "71–100", chapters: ["The Girl in the Old Memory","A Mother's Footsteps","The Shape of a Soul","The Shadow That Was Lost"] },
+  { name: "Seven Broken Thrones", range: "101–130", chapters: ["The First Broken Throne","A God in the Ashes","The Clockwork of Fate","The Flame That Remembers"] },
+  { name: "War of Two Heavens", range: "131–160", chapters: ["The Last Sermon","When Heaven Fell","The War Beneath the Sun","A World Unmade"] },
+  { name: "End of All Shadows", range: "161–190", chapters: ["The Prison Is a World","The Name Before Names","The Sleeping Enemy","The Last Guardian"] },
+  { name: "Last Dawn", range: "191–210", chapters: ["A Sky Without Gods","The Weight of Morning","What Remains of Us","The Last Shadow"] }
 ];
+// Fill the complete 210-chapter roadmap while preserving every established title.
+for (const arc of arcs) {
+  const [start, end] = arc.range.split("–").map(Number);
+  const existing = [...arc.chapters];
+  arc.chapters = Array.from({ length: end - start + 1 }, (_, index) => existing[index] || "Untitled chapter " + (start + index));
+}
 const cast = [
   "Kael Veyr: 17, slim, messy black hair, pale skin, grey eyes, worn dark travel clothes. Quiet, stubborn, protective.",
   "Nythar: the First Shadow, towering living darkness, violet eyes, crown-like horns, broken luminous chains. Ancient and controlled.",

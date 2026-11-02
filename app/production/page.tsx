@@ -160,8 +160,10 @@ export default function ChapterProductionPage() {
       for(let i=0;i<scripts.length;i++) {
         if(!regenerate && art.some(item=>item.index===i)) { setProgress(i+1); continue; }
         setMessage("Illustrating panel " + (i+1) + " of " + scripts.length + ": " + scripts[i].title);
-        const prompt = "Create one finished vertical Korean manhwa illustration for this exact scene. Preserve the character appearances and the visual continuity of this chapter. SCENE: " + scripts[i].prompt + "\nSERIES ART STYLE: " + style + ". CHARACTER CANON: " + cast.join(" ") + "\nDo not render any text, lettering, speech bubbles, captions, logos, watermarks, title cards or collage. The scene prompt is the primary instruction.";
-        const response = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,imageBase64:reference})});
+        const sceneText = scripts[i].prompt + " " + scripts[i].dialogue.map(line => line.speaker + " " + line.text).join(" ");
+        const includesMira = /\\bmira(?:\\s+veyr)?\\b/i.test(sceneText);
+        const prompt = "Create a polished 2D Korean webtoon/manhwa illustration, clearly stylized anime artwork rather than a photograph. Use expressive anime facial features, clean intentional ink linework, elegant simplified forms, controlled cel shading, soft painted fantasy backgrounds, and cinematic illustrated lighting. Keep the same designed character faces and proportions from the reference. Absolutely NOT photorealistic, NOT hyper-realistic, NOT live action, NOT a 3D render, no photographic skin texture or pores. Vertical manhwa panel composition. SCENE: " + scripts[i].prompt + "\\nSERIES ART STYLE: " + style + ". CHARACTER CANON: " + cast.join(" ") + "\\nDo not render any text, lettering, speech bubbles, captions, logos, watermarks, title cards or collage. The scene prompt is the primary instruction.";
+        const response = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,imageBase64:reference,imageUrls:includesMira?["https://i.postimg.cc/MpsrWkcY/mira-700kb.jpg"]:[]})});
         const data = await response.json();
         if(!response.ok) throw new Error(data.error || ("Image generation failed at panel " + (i+1) + "."));
         if(!data.imageUrl) throw new Error("The image service returned no image for panel " + (i+1) + ".");

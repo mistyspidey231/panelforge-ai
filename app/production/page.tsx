@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Aperture, BookOpen, ChevronLeft, ChevronRight, ImagePlus, LoaderCircle, Sparkles, WandSparkles, RefreshCw, Download } from "lucide-react";
+import Link from "next/link";
+import { Aperture, BookOpen, ChevronLeft, ImagePlus, LoaderCircle, Sparkles, WandSparkles, RefreshCw, Download } from "lucide-react";
 
 const arcs = [
   { name: "The Boy Without a Shadow", range: "01–20", chapters: ["The Boy Who Cast Two Shadows","A Voice Beneath the Floor","The Night the Faceless Came","Permission","The First Awakening","The Girl Who Saw the Monster","A Thousand-Year-Old Voice","The Church's Black List","The Inquisitor Arrives","A Shadow That Bleeds","The Man Without a Reflection","The Price of Darkness","The Forgotten Pendant","The Village That Disappeared","A Name from the Beginning","The Heretic Knight","The Execution Order","A God in Chains","The First Eclipse","The Boy the Sun Feared"] },
@@ -31,6 +32,8 @@ type Dialogue = { speaker: string; text: string; kind: "speech" | "thought" | "c
 type PanelScript = { title: string; prompt: string; dialogue: Dialogue[] };
 type SavedChapter = { title: string; panels: PanelScript[]; updatedAt: string };
 type Artwork = { index: number; title: string; url: string };
+type GeneratedDialogue = { speaker?: string; text?: string; kind?: string };
+type GeneratedPanel = { title?: string; prompt?: string; dialogue?: GeneratedDialogue[] };
 
 const dbName = "panelforge-chapter-art";
 function openArtDb(): Promise<IDBDatabase> {
@@ -137,12 +140,12 @@ export default function ChapterProductionPage() {
       const response = await fetch("/api/abdiz",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:request}],project:{title:"The God Beneath My Shadow",genre:"Dark fantasy manhwa",chapter:number,chapterTitle:title,arc:arcs[arcIndex].name,characters:cast,lore:["Nine Primordials","Dawn Dominion","Umbracore power exacts a memory cost","Nythar is the First Shadow"]}})});
       const data = await response.json();
       if(!response.ok) throw new Error(data.error || "Story generation failed.");
-      const parsed = parseJson(data.reply);
+      const parsed = parseJson(data.reply) as { panels?: GeneratedPanel[] };
       if(!Array.isArray(parsed.panels) || parsed.panels.length < 6) throw new Error("The generated chapter did not contain enough panels. Please generate the script again.");
-      const next = parsed.panels.slice(0,10).map((p: any,i:number)=>({
+      const next = parsed.panels.slice(0,10).map((p: GeneratedPanel,i:number)=>({
         title: typeof p.title==="string" ? p.title : "Scene " + (i+1),
         prompt: typeof p.prompt==="string" ? p.prompt : "",
-        dialogue: Array.isArray(p.dialogue) ? p.dialogue.slice(0,3).map((d:any)=>({speaker:String(d.speaker||"NARRATION"),text:String(d.text||""),kind:["speech","thought","caption","shadow"].includes(d.kind)?d.kind:"speech"})) : []
+        dialogue: Array.isArray(p.dialogue) ? p.dialogue.slice(0,3).map((d:GeneratedDialogue)=>({speaker:String(d.speaker||"NARRATION"),text:String(d.text||""),kind:d.kind==="thought"||d.kind==="caption"||d.kind==="shadow"?d.kind:"speech"})) : []
       }));
       setScripts(next);
       localStorage.setItem(key,JSON.stringify({title,panels:next,updatedAt:new Date().toISOString()} satisfies SavedChapter));
@@ -195,7 +198,7 @@ export default function ChapterProductionPage() {
   if(!authReady) return <main className="production-page"><div className="production-wrap"><p>Checking your secure workspace…</p></div></main>;
 
   return <main className="production-page">
-    <header className="production-top"><a href="/" className="production-brand"><Aperture size={22}/> PanelForge <em>AI</em></a><a href="/" className="back-link"><ChevronLeft size={16}/> Workspace</a></header>
+    <header className="production-top"><Link href="/" className="production-brand"><Aperture size={22}/> PanelForge <em>AI</em></Link><Link href="/" className="back-link"><ChevronLeft size={16}/> Workspace</Link></header>
     <div className="production-wrap">
       <div className="production-heading"><div className="eyebrow">AI STORYBOARD + IMAGE WORKSHOP · 210 CHAPTERS</div><h1>Every chapter becomes <em>a manhwa.</em></h1><p>Choose any chapter. Abdiz creates its scene script, dialogue and narration; the image generator then illustrates each panel in sequence.</p></div>
       <section className="chapter-select">
@@ -215,7 +218,7 @@ export default function ChapterProductionPage() {
         <div className="progress-track"><i style={{width:progressPercent+"%"}}/></div><p className="status-message">{busy==="art"?<LoaderCircle size={15} className="spin"/>:<Sparkles size={15}/>} {message}</p>
         {art.length>0&&<div className="art-grid">{art.map(item=><article className="art-card" key={item.index}><div className="art-frame"><img src={item.url} alt={item.title}/><div className="lettering-overlay">{(scripts[item.index]?.dialogue||[]).filter(line=>line.text.trim()).map((line,j)=><div className={"bubble "+line.kind} key={j}><small>{line.speaker}</small><span>{line.text}</span></div>)}</div></div><div className="art-caption"><b>Panel {String(item.index+1).padStart(2,"0")}</b><span>{item.title}</span><button onClick={()=>downloadArt(item)} aria-label="Download panel"><Download size={15}/></button></div></article>)}</div>}
       </section>
-      <div className="production-note"><b>Generation limits and saving</b><span>Text and scripts are saved in this browser. Panel images are stored in browser IndexedDB, not shared cloud storage yet. The image service currently allows up to 12 image requests per hour per IP, and Cloudflare's own daily free allowance also applies. Generate a chapter's images in batches; completed panels remain saved if you stop.</span></div>
+      <div className="production-note"><b>Generation limits and saving</b><span>Text and scripts are saved in this browser. Panel images are stored in browser IndexedDB, not shared cloud storage yet. The image service currently allows up to 12 image requests per hour per IP, and Cloudflare&apos;s own daily free allowance also applies. Generate a chapter's images in batches; completed panels remain saved if you stop.</span></div>
       {error&&<div className="production-error">{error}</div>}
     </div>
     <style jsx global>{`

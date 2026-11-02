@@ -145,7 +145,7 @@ export default function ChapterProductionPage() {
       const next = parsed.panels.slice(0,10).map((p: GeneratedPanel,i:number)=>({
         title: typeof p.title==="string" ? p.title : "Scene " + (i+1),
         prompt: typeof p.prompt==="string" ? p.prompt : "",
-        dialogue: Array.isArray(p.dialogue) ? p.dialogue.slice(0,3).map((d:GeneratedDialogue)=>({speaker:String(d.speaker||"NARRATION"),text:String(d.text||""),kind:d.kind==="thought"||d.kind==="caption"||d.kind==="shadow"?d.kind:"speech"})) : []
+        dialogue: Array.isArray(p.dialogue) ? p.dialogue.slice(0,3).map((d:GeneratedDialogue): Dialogue => { const kind: Dialogue["kind"] = d.kind === "thought" || d.kind === "caption" || d.kind === "shadow" ? d.kind : "speech"; return { speaker: String(d.speaker || "NARRATION"), text: String(d.text || ""), kind }; }) : []
       }));
       setScripts(next);
       localStorage.setItem(key,JSON.stringify({title,panels:next,updatedAt:new Date().toISOString()} satisfies SavedChapter));
